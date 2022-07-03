@@ -4,6 +4,7 @@ import os
 import re
 import time
 import json
+import shutil
 import base64
 import hashlib
 import requests
@@ -112,6 +113,8 @@ print("开始收集信息...")
 for eachClass in classList:
     videoCount = 1
     classTitle = checkName(eachClass['title'])
+    if os.path.exists(f"./videoInfo/{classTitle}"):
+        shutil.rmtree(f"./videoInfo/{classTitle}")
     os.mkdir(f"./videoInfo/{classTitle}")
     videoInfo = []
     url = f"https://ke.gupaoedu.cn/api/v2/curriculum/outline?curriculumId={eachClass['id']}&onlyOwner=1&classId={eachClass['currentClassId']}"
