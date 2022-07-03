@@ -51,6 +51,14 @@ def decodeKey(originKey: bytes, vid: str) -> bytes:
     return cipher.decrypt(originKey)[:16]
 
 
+def checkName(target:str) -> str:
+    """过滤非法文件名字符
+    :param: target: 待过滤字符串
+    :return: 合法字符串
+    """
+    return re.sub('[\/:*?"<>|]','',target)
+
+
 if not os.path.exists("./videoInfo"):
     os.mkdir("./videoInfo")
 
@@ -102,7 +110,9 @@ print()
 
 print("开始收集信息...")
 for eachClass in classList:
-    os.mkdir(f"./videoInfo/{eachClass['title']}")
+    videoCount = 1
+    classTitle = checkName(eachClass['title'])
+    os.mkdir(f"./videoInfo/{classTitle}")
     videoInfo = []
     url = f"https://ke.gupaoedu.cn/api/v2/curriculum/outline?curriculumId={eachClass['id']}&onlyOwner=1&classId={eachClass['currentClassId']}"
     response = requests.get(url, headers=headers)
@@ -119,7 +129,7 @@ for eachClass in classList:
         }
         print(data)
         response = requests.post("https://ke.gupaoedu.cn/nodeapi/v1/admin/videoes/play/auth", headers=headers, json=data)
-        print(response.text)
+        print(response.json())
         keyTokne = response.json()["data"]["token"]
         m3u8ListUrl = f"https://hls.videocc.net/{vid[:10]}/{vid.split('_')[0][-1]}/{vid.split('_')[0]}.m3u8?device=desktop"
         response = requests.get(m3u8ListUrl, headers=headers)
@@ -135,9 +145,10 @@ for eachClass in classList:
         originKey = requests.get(keyUrl, headers=headers).content
         assert len(originKey) != 0, ValueError("没拿到Key")
         relKey = decodeKey(originKey, vid)
-        with open(f"./videoInfo/{eachClass['title']}/"+name+".json", "w", encoding="utf-8") as f:
+        with open(f"./videoInfo/{classTitle}/{videoCount}-"+checkName(name)+".json", "w", encoding="utf-8") as f:
             f.write(json.dumps({
                 'iv': base64.b64encode(iv).decode(),
                 'key': base64.b64encode(relKey).decode(),
                 'tsUrls': tsUrlList
             }))
+        videoCount += 1
